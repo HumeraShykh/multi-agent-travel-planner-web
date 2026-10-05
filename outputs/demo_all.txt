@@ -1,0 +1,296 @@
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+
+########################################################################
+
+TEST 2 — Unrelated request blocked by the guardrail
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+BLOCKED by input guardrail  (tripwire_triggered = True)
+Request is unrelated to travel planning (matched non-travel topic). Workflow stopped.
+Specialist agents were NOT started. Workflow stopped.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+selected_agents = []  (none, as required)
+thread_id=thread-a3c0cd44c354
+
+########################################################################
+
+TEST 3 — Hotel-only request must NOT invoke flight or weather
+selected_agents = ['hotel', 'budget']
+rationale = User asked only for hotels, so Flight and Weather are skipped. Budget is included only if a spend limit was given.
+flight_results is None (pass)
+weather_info is None (pass)
+hotel_results is SET (pass)
+[SAMPLE DATA — labelled for demo only | not a live Tavily result]
+[UNAVAILABLE] Tavily remote hotel search failed: TAVILY_API_KEY is missing. Remote Tavily hotel search cannot run.
+
+[SAMPLE DATA — labelled for demo only]
+Stay options in Dubai (illustrative):
+1) City Centre Hotel — 3★, metro access — sample nightly range PKR 18,000–22,000
+2) Marina View Suites — 4★, family rooms — sample nightly range PKR 28,000–35,000
+3) Budget Stay Deira — 3★, breakfast included — sample nightly range PKR 12,000–16,000
+These are not live availability or booking prices.
+thread_id=thread-1689093c48e6
+
+########################################################################
+
+TEST 1 — Valid travel request
+========================================================================
+DRAFT ITINERARY — waiting for human approval
+========================================================================
+Thread: thread-cb5b960210de
+Selected agents: flight, hotel, weather, budget, itinerary
+Selection rationale: Full trip-planning request: destination, stay, and arrangements were asked, so Flight, Hotel, Weather, Budget, and Itinerary are all required.
+LLM calls so far: 0
+
+Trip constraints: origin=Karachi, destination=Dubai, days=4, dates=2026-11-10 → 2026-11-13, travellers=2, budget=PKR 300000.0
+User said 'next month'; using 2026-11-10 to 2026-11-13.
+
+------------------------------------------------------------------------
+Flights  [SAMPLE DATA — labelled for demo only | not a live Aviationstack quote]
+Limitation: Aviationstack MCP could not retrieve flights: AVIATIONSTACK_API_KEY is missing. The flight MCP cannot call the live API.
+[UNAVAILABLE] Aviationstack MCP could not retrieve flights: AVIATIONSTACK_API_KEY is missing. The flight MCP cannot call the live API.
+
+[SAMPLE DATA — labelled for demo only]
+Route Karachi → Dubai (illustrative, not bookable):
+1) PK-211 Pakistan International · morning departure · fare unknown
+2) EK-603 Emirates · afternoon departure · fare unknown
+3) QR-611 Qatar Airways via DOH · evening departure · fare unknown
+Ticket prices are NOT retrieved. Budget agent must treat fares as estimates.
+
+------------------------------------------------------------------------
+Hotels  [SAMPLE DATA — labelled for demo only | not a live Tavily result]
+Limitation: Tavily remote hotel search failed: TAVILY_API_KEY is missing. Remote Tavily hotel search cannot run.
+[UNAVAILABLE] Tavily remote hotel search failed: TAVILY_API_KEY is missing. Remote Tavily hotel search cannot run.
+
+[SAMPLE DATA — labelled for demo only]
+Stay options in Dubai (illustrative):
+1) City Centre Hotel — 3★, metro access — sample nightly range PKR 18,000–22,000
+2) Marina View Suites — 4★, family rooms — sample nightly range PKR 28,000–35,000
+3) Budget Stay Deira — 3★, breakfast included — sample nightly range PKR 12,000–16,000
+These are not live availability or booking prices.
+
+------------------------------------------------------------------------
+Weather  [RETRIEVED via custom Weather MCP — local STDIO]
+{
+  "ok": true,
+  "source": "retrieved",
+  "provider": "wttr.in",
+  "city": "Dubai",
+  "current": {
+    "temp_c": "33",
+    "feels_like_c": "36",
+    "humidity": "47",
+    "condition": "Sunny"
+  },
+  "forecast": [
+    {
+      "date": "2026-10-03",
+      "max_c": "34",
+      "min_c": "30",
+      "condition": "Sunny"
+    },
+    {
+      "date": "2026-10-04",
+      "max_c": "33",
+      "min_c": "31",
+      "condition": "Sunny"
+    },
+    {
+      "date": "2026-10-05",
+      "max_c": "33",
+      "min_c": "31",
+      "condition": "Sunny"
+    }
+  ]
+}
+
+------------------------------------------------------------------------
+Budget  [ESTIMATE by Budget agent — not retrieved from an airline/hotel API]
+[ESTIMATE by Budget agent — not a live quote]
+Flights: PKR 90,000 (estimated; live fares were not retrieved)
+Hotel: PKR 80,000 (estimated)
+Food: PKR 48,000 (estimated)
+Activities: PKR 32,000 (estimated)
+Total estimate: PKR 250,000 for 2 adults / 4 days
+User budget: PKR 300,000 → FITS
+
+------------------------------------------------------------------------
+Itinerary  [COMBINED PLAN by Itinerary agent using available specialist results]
+Draft itinerary for Dubai (4 days) — recommendations only, no bookings.
+User said 'next month'; using 2026-11-10 to 2026-11-13.
+Day 1: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 2: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 3: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 4: Arrive/explore neighbourhood, one main sight, evening rest.
+Hotel options were supplied by the Hotel agent — pick from those results.
+Packing should follow the Weather agent output, not invented climate data.
+
+This application recommends a plan. It does not make bookings.
+thread_id=thread-cb5b960210de
+
+--- resume check (same thread_id) ---
+Reloaded checkpoint: selected=['flight', 'hotel', 'weather', 'budget', 'itinerary']
+Conversation rows: 8
+Resume command: python main.py --resume thread-cb5b960210de
+
+########################################################################
+
+TEST 4 — Request requiring several specialist agents
+selected_agents = ['flight', 'hotel', 'weather', 'budget', 'itinerary']
+rationale = Full trip-planning request: destination, stay, and arrangements were asked, so Flight, Hotel, Weather, Budget, and Itinerary are all required.
+  flight     ran      [SAMPLE DATA — labelled for demo only | not a live Aviationstack quote]
+  hotel      ran      [SAMPLE DATA — labelled for demo only | not a live Tavily result]
+  weather    ran      [RETRIEVED via custom Weather MCP — local STDIO]
+  budget     ran      [ESTIMATE by Budget agent — not retrieved from an airline/hotel API]
+  itinerary  ran      [COMBINED PLAN by Itinerary agent using available specialist results]
+thread_id=thread-d4a9e9663b10
+
+########################################################################
+
+TEST 5 — Revision followed by approval
+First draft selected: ['flight', 'hotel', 'weather', 'budget', 'itinerary']
+Revision selected: ['hotel', 'budget', 'itinerary']
+rationale = Revision asks for a cheaper hotel and fewer expensive activities, so only Hotel, Budget, and Itinerary are re-run. Flight and Weather already have results and are not needed again.
+Flight re-run? yes (should be no if already present and not selected)
+========================================================================
+DRAFT ITINERARY — waiting for human approval
+========================================================================
+Thread: thread-43cf0b35c68a
+Selected agents: hotel, budget, itinerary
+Selection rationale: Revision asks for a cheaper hotel and fewer expensive activities, so only Hotel, Budget, and Itinerary are re-run. Flight and Weather already have results and are not needed again.
+LLM calls so far: 0
+
+Trip constraints: origin=Karachi, destination=Dubai, days=4, dates=2026-11-10 → 2026-11-13, travellers=2, budget=PKR 300000.0
+User said 'next month'; using 2026-11-10 to 2026-11-13.
+
+------------------------------------------------------------------------
+Flights  [SAMPLE DATA — labelled for demo only | not a live Aviationstack quote]
+Limitation: Aviationstack MCP could not retrieve flights: AVIATIONSTACK_API_KEY is missing. The flight MCP cannot call the live API.
+[UNAVAILABLE] Aviationstack MCP could not retrieve flights: AVIATIONSTACK_API_KEY is missing. The flight MCP cannot call the live API.
+
+[SAMPLE DATA — labelled for demo only]
+Route Karachi → Dubai (illustrative, not bookable):
+1) PK-211 Pakistan International · morning departure · fare unknown
+2) EK-603 Emirates · afternoon departure · fare unknown
+3) QR-611 Qatar Airways via DOH · evening departure · fare unknown
+Ticket prices are NOT retrieved. Budget agent must treat fares as estimates.
+
+------------------------------------------------------------------------
+Hotels  [SAMPLE DATA — labelled for demo only | not a live Tavily result]
+Limitation: Tavily remote hotel search failed: TAVILY_API_KEY is missing. Remote Tavily hotel search cannot run.
+[UNAVAILABLE] Tavily remote hotel search failed: TAVILY_API_KEY is missing. Remote Tavily hotel search cannot run.
+
+[SAMPLE DATA — labelled for demo only]
+Stay options in Dubai (illustrative):
+1) City Centre Hotel — 3★, metro access — sample nightly range PKR 18,000–22,000
+2) Marina View Suites — 4★, family rooms — sample nightly range PKR 28,000–35,000
+3) Budget Stay Deira — 3★, breakfast included — sample nightly range PKR 12,000–16,000
+These are not live availability or booking prices.
+
+------------------------------------------------------------------------
+Weather  [RETRIEVED via custom Weather MCP — local STDIO]
+{
+  "ok": true,
+  "source": "retrieved",
+  "provider": "wttr.in",
+  "city": "Dubai",
+  "current": {
+    "temp_c": "33",
+    "feels_like_c": "36",
+    "humidity": "47",
+    "condition": "Sunny"
+  },
+  "forecast": [
+    {
+      "date": "2026-10-03",
+      "max_c": "34",
+      "min_c": "30",
+      "condition": "Sunny"
+    },
+    {
+      "date": "2026-10-04",
+      "max_c": "33",
+      "min_c": "31",
+      "condition": "Sunny"
+    },
+    {
+      "date": "2026-10-05",
+      "max_c": "33",
+      "min_c": "31",
+      "condition": "Sunny"
+    }
+  ]
+}
+
+------------------------------------------------------------------------
+Budget  [ESTIMATE by Budget agent — not retrieved from an airline/hotel API]
+[ESTIMATE by Budget agent — not a live quote]
+Flights: PKR 90,000 (estimated; live fares were not retrieved)
+Hotel: PKR 80,000 (estimated)
+Food: PKR 48,000 (estimated)
+Activities: PKR 32,000 (estimated)
+Total estimate: PKR 250,000 for 2 adults / 4 days
+User budget: PKR 300,000 → FITS
+
+------------------------------------------------------------------------
+Itinerary  [COMBINED PLAN by Itinerary agent using available specialist results]
+Draft itinerary for Dubai (4 days) — recommendations only, no bookings.
+User said 'next month'; using 2026-11-10 to 2026-11-13.
+Day 1: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 2: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 3: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 4: Arrive/explore neighbourhood, one main sight, evening rest.
+Hotel options were supplied by the Hotel agent — pick from those results.
+Packing should follow the Weather agent output, not invented climate data.
+Revision applied: Choose a cheaper hotel and remove expensive activities.
+
+This application recommends a plan. It does not make bookings.
+
+--- FINAL AFTER APPROVAL ---
+FINAL TRAVEL PLAN (approved)
+This is a recommendation only — no bookings were made.
+
+Draft itinerary for Dubai (4 days) — recommendations only, no bookings.
+User said 'next month'; using 2026-11-10 to 2026-11-13.
+Day 1: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 2: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 3: Arrive/explore neighbourhood, one main sight, evening rest.
+Day 4: Arrive/explore neighbourhood, one main sight, evening rest.
+Hotel options were supplied by the Hotel agent — pick from those results.
+Packing should follow the Weather agent output, not invented climate data.
+Revision applied: Choose a cheaper hotel and remove expensive activities.
+
+[ESTIMATE by Budget agent — not a live quote]
+Flights: PKR 90,000 (estimated; live fares were not retrieved)
+Hotel: PKR 80,000 (estimated)
+Food: PKR 48,000 (estimated)
+Activities: PKR 32,000 (estimated)
+Total estimate: PKR 250,000 for 2 adults / 4 days
+User budget: PKR 300,000 → FITS
+thread_id=thread-43cf0b35c68a
+
+########################################################################
+
+TEST 6 — API failure handled without fabricated live results
+selected_agents = ['flight', 'hotel', 'weather', 'budget', 'itinerary']
+[UNAVAILABLE — no fabricated flight results shown]
+Aviationstack MCP could not retrieve flights: AVIATIONSTACK_API_KEY is missing. The flight MCP cannot call the live API.
+The workflow continues without invented airlines or ticket prices.
+source = unavailable
+Itinerary still produced: True
+thread_id=thread-f2e3fa815f53

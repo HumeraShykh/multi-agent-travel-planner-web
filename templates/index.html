@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SAFAR · Travel Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5" />
+</head>
+<body>
+  <div class="page-bg" style="background-image:url('{{ dest_photo if state and state.trip_constraints.destination else hero }}')"></div>
+  <div class="page-shade"></div>
+
+  <nav>
+    <a class="brand" href="{{ url_for('home') }}">SAFAR</a>
+    <p>Curated journeys · Pakistan & beyond</p>
+    <span>Recommend only · never books</span>
+  </nav>
+
+  <header class="hero">
+    <p class="kicker">Your personal travel desk</p>
+    <h1>{% if state and state.trip_constraints.destination %}{{ state.trip_constraints.origin or "Your city" }} to {{ state.trip_constraints.destination }}{% else %}Where shall we take you?{% endif %}</h1>
+    <p class="lead">Tell us the trip in plain words. Specialist agents fetch flights, stays, and weather — you approve the plan.</p>
+
+    <form class="search" method="post" action="{{ url_for('plan') }}" onsubmit="this.classList.add('busy')">
+      <label for="query">Describe your trip</label>
+      <textarea id="query" name="query" rows="3" required placeholder="Plan a four-day trip from Karachi to Dubai next month for two adults. Budget PKR 300,000.">{{ state.user_query if state else "" }}</textarea>
+      <div class="search-bar">
+        <button type="submit">Design my journey</button>
+        <p>Try hotel-only, or a Sukkur → Islamabad tour.</p>
+      </div>
+    </form>
+    {% if error %}<p class="flash">{{ error }}</p>{% endif %}
+  </header>
+
+  {% if state and state.approval_status == "blocked" %}
+  <section class="sheet alert">
+    <h2>This request was stopped</h2>
+    <p>{{ state.guardrail_reason }}</p>
+    <p class="fine">The guardrail tripwire fired. No flight, hotel, or weather agent ran.</p>
+  </section>
+  {% elif state %}
+
+  <section class="strip">
+    <article style="background-image:url('{{ origin_photo }}')"><span>From</span><strong>{{ state.trip_constraints.origin or "—" }}</strong></article>
+    <article style="background-image:url('{{ dest_photo }}')"><span>To</span><strong>{{ state.trip_constraints.destination or "—" }}</strong></article>
+    <article class="plain"><span>Stay</span><strong>{{ state.trip_constraints.duration_days or "—" }} nights</strong></article>
+    <article class="plain"><span>Guests</span><strong>{{ state.trip_constraints.travellers or "—" }}</strong></article>
+    <article class="plain"><span>Budget</span><strong>{{ state.trip_constraints.budget_currency }} {{ "{:,.0f}".format(state.trip_constraints.budget_amount) if state.trip_constraints.budget_amount else "open" }}</strong></article>
+  </section>
+
+  <section class="sheet">
+    <div class="section-head">
+      <h2>Your concierge team</h2>
+      <p>{{ state.selection_rationale }}</p>
+    </div>
+    <div class="agents">
+      {% for name in ["flight", "hotel", "weather", "budget", "itinerary"] %}
+      <span class="{% if name in state.selected_agents %}on{% else %}off{% endif %}">{{ name }}</span>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if state.flight_results %}
+  <section class="sheet">
+    <div class="section-head">
+      <h2>Flights</h2>
+      <p>{{ state.flight_results.label }}</p>
+    </div>
+    {% if state.flight_results.limitation %}<p class="warn">{{ state.flight_results.limitation }}</p>{% endif %}
+    {% if flights %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Airline</th><th>Flight</th><th>Departs</th><th>Arrives</th><th>Status</th><th>Fare</th></tr></thead>
+        <tbody>
+        {% for f in flights %}
+          <tr>
+            <td>{{ f.airline or "—" }}</td>
+            <td>{{ f.flight or "—" }}</td>
+            <td>{{ (f.depart or "—")[:16].replace("T", " ") }}</td>
+            <td>{{ (f.arrive or "—")[:16].replace("T", " ") }}</td>
+            <td>{{ f.status or "—" }}</td>
+            <td>Estimate only</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="body-copy">{{ state.flight_results.content }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if state.hotel_results %}
+  <section class="sheet">
+    <div class="section-head">
+      <h2>Places to stay</h2>
+      <p>{{ state.hotel_results.label }}</p>
+    </div>
+    {% if hotel_answer %}<p class="body-copy">{{ hotel_answer }}</p>{% endif %}
+    {% if state.hotel_results.limitation %}<p class="warn">{{ state.hotel_results.limitation }}</p>{% endif %}
+    {% if hotels %}
+    <div class="hotel-grid">
+      {% for h in hotels[:5] %}
+      <article class="hotel">
+        <div class="hotel-photo" style="background-image:url('{{ hotel_photos[loop.index0 % hotel_photos|length] }}')"></div>
+        <div class="hotel-copy">
+          <h3>{{ h.title or "Stay option" }}</h3>
+          <p>{{ (h.snippet or "")[:200] }}{% if h.snippet and h.snippet|length > 200 %}…{% endif %}</p>
+          {% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noreferrer">Read source</a>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="body-copy">{{ state.hotel_results.content }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if weather %}
+  <section class="sheet weather">
+    <div class="section-head">
+      <h2>Sky over {{ weather.city or state.trip_constraints.destination }}</h2>
+      <p>{{ state.weather_info.label }}</p>
+    </div>
+    <div class="forecast">
+      <article class="now">
+        <span>Now</span>
+        <strong>{{ weather.current.temp_c }}°</strong>
+        <p>{{ weather.current.condition }} · humidity {{ weather.current.humidity }}%</p>
+      </article>
+      {% for d in weather.forecast %}
+      <article>
+        <span>{{ d.date }}</span>
+        <strong>{{ d.max_c }}°</strong>
+        <p>{{ d.min_c }}–{{ d.max_c }}° · {{ d.condition }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% elif state and state.weather_info %}
+  <section class="sheet">
+    <h2>Weather</h2>
+    <p class="body-copy">{{ state.weather_info.content }}</p>
+  </section>
+  {% endif %}
+
+  {% if state.budget_analysis %}
+  <section class="sheet budget">
+    <div class="section-head">
+      <h2>Estimated spend</h2>
+      <p>{{ state.budget_analysis.label }}</p>
+    </div>
+    <pre>{{ state.budget_analysis.content }}</pre>
+  </section>
+  {% endif %}
+
+  {% if state.itinerary_plan %}
+  <section class="sheet">
+    <div class="section-head">
+      <h2>Day by day</h2>
+      <p>{{ state.itinerary_plan.label }}</p>
+    </div>
+    <ol class="days">
+      {% for day in itin_days %}
+      <li>{{ day }}</li>
+      {% endfor %}
+    </ol>
+    {% if itin_notes %}
+    <ul class="notes">
+      {% for n in itin_notes %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if state.final_response %}
+  <section class="sheet final">
+    <h2>Your confirmed recommendation</h2>
+    <pre>{{ state.final_response }}</pre>
+  </section>
+  {% elif state.approval_status != "blocked" %}
+  <section class="sheet review">
+    <div>
+      <h2>Ready to keep this plan?</h2>
+      <p>Nothing is booked. Approval only locks the recommendation.</p>
+    </div>
+    <form method="post" action="{{ url_for('approve') }}">
+      <input type="hidden" name="thread_id" value="{{ state.thread_id }}" />
+      <button type="submit">Approve this journey</button>
+    </form>
+    <form class="change" method="post" action="{{ url_for('revise') }}">
+      <input type="hidden" name="thread_id" value="{{ state.thread_id }}" />
+      <input name="notes" placeholder="Choose a cheaper hotel and drop expensive activities." />
+      <button type="submit" class="ghost">Revise</button>
+    </form>
+  </section>
+  {% endif %}
+  {% endif %}
+
+  <footer>
+    <p>SAFAR · Agentic AI class project · MCP flights, hotels, and weather · PostgreSQL memory</p>
+  </footer>
+</body>
+</html>
